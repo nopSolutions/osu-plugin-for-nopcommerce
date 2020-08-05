@@ -1,0 +1,107 @@
+﻿@model PaymentInfoModel
+
+@{
+    Layout = "";
+}
+
+<script asp-location="Footer">
+    $(document).ready(function () {
+        $('.payment-info-next-step-button').hide();
+    });
+</script>
+
+<div class="osu-payment-container">
+    @if (Model == null)
+    {
+        <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+                <td>
+                    <p>@T("Plugins.Payments.Osu.PaymentInfoIsNotConfigured")</p>
+                </td>
+            </tr>
+        </table>
+    }
+    else
+    {
+        <script asp-location="Footer">
+            function payosu_pay() {
+                payosu.pay({
+                    buyerFirstName: '@Model.BuyerFirstName',
+                    buyerLastName: '@Model.BuyerLastName',
+                    buyerEmail: '@Model.BuyerEmail',
+                    buyerPostCode: '@Model.BuyerPostCode',
+                    buyerAddress: '@Model.BuyerAddress',
+                    paymentCurrency: '@Model.PaymentCurrency',
+                    apiKey: '@Model.ApiKey',
+                    paymentAmount: @Model.PaymentAmount,
+                    paymentReference: '@Model.PaymentReference',
+                });
+            }
+
+            function payosu_failure() {
+                @if (!orderSettings.OnePageCheckoutEnabled)
+                {
+                    <text>
+                        window.location = '@Url.Action("PaymentMethod", "Checkout")';
+                    </text>
+                }
+                else
+                {
+                    <text>
+                        $('#opc-payment_method .step-title').click();
+                    </text>
+                }
+            }
+
+            $(document).ready(function () {
+                @if (orderSettings.OnePageCheckoutEnabled)
+                {
+                    <text>
+                        payosu_pay();
+
+                        $(document).off('accordion_section_opened');
+                        $(document).on('accordion_section_opened', function (data) {
+                            if (data.currentSectionId != 'opc-payment_info') {
+                                $('.payment-info-next-step-button').show();
+                            }
+                        });
+                    </text>
+                }
+
+                $(window).off('message');
+                $(window).on('message', function (e) {
+                    console.log(e.originalEvent.data);
+
+                    @if (!orderSettings.OnePageCheckoutEnabled)
+                    {
+                        <text>
+                            if (e.originalEvent.data.event === 'INIT') {
+                                payosu_pay();
+                            }
+                        </text>
+                    }
+
+                    if (e.originalEvent.data.event === 'APP_CLOSE_REQUEST') {
+                        if (e.originalEvent.data.data === true) {
+                            payosu_failure();
+                        }
+                    }
+
+                    if (e.originalEvent.data.event === 'REDIRECT') {
+                        if (e.originalEvent.data.data.key === 'failureURL') {
+                            payosu_failure();
+                        } else if (e.originalEvent.data.data.key === 'successURL') {
+                            $('.osu-payment-container').html($('<span/>').text('@T("Plugins.Payments.Osu.Payment.Successful")'))
+                            $('input.payment-info-next-step-button').click();
+                        }
+                    }
+                });
+            });
+        </script>
+    }
+</div>
+
+@if (orderSettings.OnePageCheckoutEnabled)
+{
+    @Html.NopInlineScripts(ResourceLocation.Footer)
+}
