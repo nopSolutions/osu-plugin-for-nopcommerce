@@ -1,4 +1,5 @@
-﻿using Nop.Plugin.Payments.Osu.Models;
+﻿using System.Threading.Tasks;
+using Nop.Plugin.Payments.Osu.Models;
 
 namespace Nop.Plugin.Payments.Osu.Services
 {
@@ -10,7 +11,10 @@ namespace Nop.Plugin.Payments.Osu.Services
         /// <summary>
         /// Creates the Osu payment info model
         /// </summary>
-        /// <returns>The Osu payment info model</returns>
-        PaymentInfoModel CreatePaymentInfo();
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the Osu payment info model
+        /// </returns>
+        Task<PaymentInfoModel> CreatePaymentInfoAsync();
     }
 }

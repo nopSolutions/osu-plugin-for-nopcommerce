@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Nop.Plugin.Payments.Osu.Models;
 
 namespace Nop.Plugin.Payments.Osu.Services
@@ -13,6 +14,7 @@ namespace Nop.Plugin.Payments.Osu.Services
         /// </summary>
         /// <param name="httpContext">The HTTP context</param>
         /// <param name="request">The web hook success payment request</param>
-        void ProcessSuccessPayment(HttpContext httpContext, WebHookSuccessPaymentRequest request);
+        /// <returns>The <see cref="Task"/></returns>
+        Task ProcessSuccessPaymentAsync(HttpContext httpContext, WebHookSuccessPaymentRequest request);
     }
 }

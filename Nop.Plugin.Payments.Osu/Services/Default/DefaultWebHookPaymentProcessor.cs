@@ -2,6 +2,7 @@
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Nop.Plugin.Payments.Osu.Models;
 using Nop.Services.Customers;
@@ -53,29 +54,30 @@ namespace Nop.Plugin.Payments.Osu.Services
         /// </summary>
         /// <param name="httpContext">The HTTP context</param>
         /// <param name="request">The web hook payment request</param>
-        public virtual void ProcessSuccessPayment(HttpContext httpContext, WebHookSuccessPaymentRequest request)
+        /// <returns>The <see cref="Task"/></returns>
+        public virtual async Task ProcessSuccessPaymentAsync(HttpContext httpContext, WebHookSuccessPaymentRequest request)
         {
             if (httpContext == null)
                 throw new ArgumentNullException(nameof(httpContext));
             if (request == null)
                 throw new ArgumentNullException(nameof(request));
 
-            if (CanProcessSuccessPayment(httpContext, request))
+            if (await CanProcessSuccessPaymentAsync(httpContext, request))
             {
                 var paymentData = request.PaymentData.Reference.Split("::");
                 var orderGuid = Guid.Parse(paymentData[0]);
-                var order = _orderService.GetOrderByGuid(orderGuid);
+                var order = await _orderService.GetOrderByGuidAsync(orderGuid);
                 if (order == null)
                 {
                     // it's checkout process
                     // let's just save the payment transaction id for further processing
                     var customerId = int.Parse(paymentData[1]);
-                    var customer = _customerService.GetCustomerById(customerId);
+                    var customer = await _customerService.GetCustomerByIdAsync(customerId);
                     if (customer != null)
-                        _osuPaymentService.CaptureTransactionId(customer, request.PaymentId);
+                        await _osuPaymentService.CaptureTransactionIdAsync(customer, request.PaymentId);
                 }
                 else
-                    _osuPaymentService.CaptureOrder(order, request.PaymentId);
+                    await _osuPaymentService.CaptureOrderAsync(order, request.PaymentId);
             }
         }
 
@@ -89,7 +91,7 @@ namespace Nop.Plugin.Payments.Osu.Services
         /// <param name="httpContext">The HTTP context</param>
         /// <param name="request">The web hook payment request</param>
         /// <returns>Returns the value indicating whether the request can be processed</returns>
-        protected virtual bool CanProcessSuccessPayment(HttpContext httpContext, WebHookSuccessPaymentRequest request)
+        protected virtual async Task<bool> CanProcessSuccessPaymentAsync(HttpContext httpContext, WebHookSuccessPaymentRequest request)
         {
             if (httpContext == null)
                 throw new ArgumentNullException(nameof(httpContext));
@@ -146,7 +148,7 @@ namespace Nop.Plugin.Payments.Osu.Services
             }
             catch (Exception exception)
             {
-                _logger.Error("Osu payment plugin: Invalid signature verification. Make sure that the correct 'public key' is specified in the plugin settings.", exception);
+                await _logger.ErrorAsync("Osu payment plugin: Invalid signature verification. Make sure that the correct 'public key' is specified in the plugin settings.", exception);
                 return false;
             }
         }

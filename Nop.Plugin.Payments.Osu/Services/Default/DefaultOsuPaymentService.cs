@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Nop.Core;
 using Nop.Core.Domain.Customers;
 using Nop.Core.Domain.Orders;
@@ -47,26 +48,33 @@ namespace Nop.Plugin.Payments.Osu.Services
         /// Captures the payment transaction id for user
         /// </summary>
         /// <param name="transactionId">The payment transaction id</param>
-        public virtual void CaptureTransactionId(Customer customer, string transactionId)
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// </returns>
+        public virtual async Task CaptureTransactionIdAsync(Customer customer, string transactionId)
         {
             if (customer == null)
                 throw new ArgumentNullException(nameof(customer));
 
-            _genericAttributeService.SaveAttribute(
-                customer, Defaults.PaymentTransactionIdAttribute, transactionId, _storeContext.CurrentStore.Id);
+            await _genericAttributeService.SaveAttributeAsync(
+                customer, Defaults.PaymentTransactionIdAttribute, transactionId, (await _storeContext.GetCurrentStoreAsync()).Id);
         }
 
         /// <summary>
         /// Gets the captured payment transaction id for user
         /// </summary>
         /// <returns>The payment transaction id</returns>
-        public virtual string GetCapturedTransactionId(Customer customer)
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the payment transaction id
+        /// </returns>
+        public virtual async Task<string> GetCapturedTransactionIdAsync(Customer customer)
         {
             if (customer == null)
                 throw new ArgumentNullException(nameof(customer));
 
-            return _genericAttributeService.GetAttribute<string>(
-                customer, Defaults.PaymentTransactionIdAttribute, _storeContext.CurrentStore.Id);
+            return await _genericAttributeService.GetAttributeAsync<string>(
+                customer, Defaults.PaymentTransactionIdAttribute, (await _storeContext.GetCurrentStoreAsync()).Id);
         }
 
         /// <summary>
@@ -74,7 +82,10 @@ namespace Nop.Plugin.Payments.Osu.Services
         /// </summary>
         /// <param name="order">The order</param>
         /// <param name="transactionId">The payment transaction id</param>
-        public virtual void CaptureOrder(Order order, string transactionId)
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// </returns>
+        public virtual async Task CaptureOrderAsync(Order order, string transactionId)
         {
             if (order == null)
                 throw new ArgumentNullException(nameof(order));
@@ -88,12 +99,12 @@ namespace Nop.Plugin.Payments.Osu.Services
             if (_orderProcessingService.CanMarkOrderAsPaid(order))
             {
                 order.CaptureTransactionId = transactionId;
-                _orderService.UpdateOrder(order);
-                _orderProcessingService.MarkOrderAsPaid(order);
+                await _orderService.UpdateOrderAsync(order);
+                await _orderProcessingService.MarkOrderAsPaidAsync(order);
 
-                var customer = _customerService.GetCustomerById(order.CustomerId);
+                var customer = await _customerService.GetCustomerByIdAsync(order.CustomerId);
                 if (customer != null)
-                    CaptureTransactionId(customer, null);
+                    await CaptureTransactionIdAsync(customer, null);
             }
         }
 

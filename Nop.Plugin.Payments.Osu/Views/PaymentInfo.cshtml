@@ -92,7 +92,7 @@
                             payosu_failure();
                         } else if (e.originalEvent.data.data.key === 'successURL') {
                             $('.osu-payment-container').html($('<span/>').text('@T("Plugins.Payments.Osu.Payment.Successful")'))
-                            $('input.payment-info-next-step-button').click();
+                            $('button.payment-info-next-step-button').click();
                         }
                     }
                 });

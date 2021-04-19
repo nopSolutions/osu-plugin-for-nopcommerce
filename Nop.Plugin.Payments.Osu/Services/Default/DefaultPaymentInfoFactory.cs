@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Nop.Core;
 using Nop.Core.Domain.Directory;
@@ -68,10 +69,13 @@ namespace Nop.Plugin.Payments.Osu.Services
         /// <summary>
         /// Creates the Osu payment info model
         /// </summary>
-        /// <returns>The Osu payment info model</returns>
-        public virtual PaymentInfoModel CreatePaymentInfo()
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the Osu payment info model
+        /// </returns>
+        public virtual async Task<PaymentInfoModel> CreatePaymentInfoAsync()
         {
-            var customer = _workContext.CurrentCustomer;
+            var customer = await _workContext.GetCurrentCustomerAsync();
             if (customer == null)
                 return null;
 
@@ -87,9 +91,9 @@ namespace Nop.Plugin.Payments.Osu.Services
             };
 
             // set billing details
-            var billingAddress = _customerService.GetCustomerBillingAddress(customer);
+            var billingAddress = await _customerService.GetCustomerBillingAddressAsync(customer);
             if (billingAddress == null)
-                billingAddress = _customerService.GetCustomerShippingAddress(customer);
+                billingAddress = await _customerService.GetCustomerShippingAddressAsync(customer);
 
             if (billingAddress != null)
             {
@@ -103,20 +107,20 @@ namespace Nop.Plugin.Payments.Osu.Services
             }
 
             // set currency
-            if (_workContext.WorkingCurrency == null)
+            if (await _workContext.GetWorkingCurrencyAsync() == null)
                 return null;
 
-            var currency = _currencyService.GetCurrencyById(_currencySettings.PrimaryStoreCurrencyId);
+            var currency = await _currencyService.GetCurrencyByIdAsync(_currencySettings.PrimaryStoreCurrencyId);
             if (currency == null)
                 return null;
 
             model.PaymentCurrency = currency.CurrencyCode;
 
             // set payment amount
-            var cart = _shoppingCartService.GetShoppingCart(customer, ShoppingCartType.ShoppingCart, _storeContext.CurrentStore.Id);
+            var cart = await _shoppingCartService.GetShoppingCartAsync(customer, ShoppingCartType.ShoppingCart, (await _storeContext.GetCurrentStoreAsync()).Id);
             if (cart?.Any() == true)
             {
-                var subTotal = _orderTotalCalculationService.GetShoppingCartTotal(cart);
+                var subTotal = (await _orderTotalCalculationService.GetShoppingCartTotalAsync(cart)).shoppingCartTotal;
 
                 model.PaymentAmount = subTotal.HasValue
                     ? subTotal.Value * 100
@@ -130,12 +134,12 @@ namespace Nop.Plugin.Payments.Osu.Services
 
             var processPaymentRequest = new ProcessPaymentRequest();
             _paymentService.GenerateOrderGuid(processPaymentRequest);
-            model.PaymentReference = $"{processPaymentRequest.OrderGuid.ToString()}::{customer.Id}";
+            model.PaymentReference = $"{processPaymentRequest.OrderGuid}::{customer.Id}";
 
             httpContext.Session.Set(Defaults.PaymentRequestSessionKey, processPaymentRequest);
 
             // clear the payment transaction id for customer
-            _osuPaymentService.CaptureTransactionId(customer, null);
+            await _osuPaymentService.CaptureTransactionIdAsync(customer, null);
 
             return model;
         }

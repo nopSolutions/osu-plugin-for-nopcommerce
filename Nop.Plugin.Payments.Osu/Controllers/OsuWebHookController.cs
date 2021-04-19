@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 using Nop.Plugin.Payments.Osu.Models;
 using Nop.Plugin.Payments.Osu.Services;
 
@@ -24,10 +25,10 @@ namespace Nop.Plugin.Payments.Osu.Controllers
         #region Methods
 
         [HttpPost]
-        public IActionResult HandleSuccess([FromBody]WebHookSuccessPaymentRequest request)
+        public async Task<IActionResult> HandleSuccess([FromBody]WebHookSuccessPaymentRequest request)
         {
             if (ModelState.IsValid)
-                _webHookProcessor.ProcessSuccessPayment(HttpContext, request);
+                await _webHookProcessor.ProcessSuccessPaymentAsync(HttpContext, request);
 
             return Ok();
         }

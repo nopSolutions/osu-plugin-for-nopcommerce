@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 using Nop.Plugin.Payments.Osu.Services;
 using Nop.Web.Framework.Components;
 
@@ -27,9 +28,9 @@ namespace Nop.Plugin.Payments.Osu.Components
 
         #region Methods
 
-        public IViewComponentResult Invoke()
+        public async Task<IViewComponentResult> InvokeAsync()
         {
-            var model = _paymentInfoFactory.CreatePaymentInfo();
+            var model = await _paymentInfoFactory.CreatePaymentInfoAsync();
             return View("~/Plugins/Payments.Osu/Views/PaymentInfo.cshtml", model);
         } 
 
